@@ -1,6 +1,9 @@
-name: Multi-Platform Build
+name: Multi-Platform Build and Release
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送 v 开头的标签时触发
 
 jobs:
   build:
@@ -47,3 +50,32 @@ jobs:
         with:
           name: ${{ matrix.output }}
           path: ${{ matrix.output }}
+          
+  release:
+    name: Create Release
+    needs: build  # 依赖 build 任务
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}  # 使用触发的标签
+          name: Release ${{ github.ref_name }}
+          body: |
+            Multi-platform hello world binaries
+            - Linux AMD64
+            - Linux ARM64
+            - Windows AMD64
+            - Windows ARM64
+          files: |
+            artifacts/hello_linux_amd64
+            artifacts/hello_linux_arm64
+            artifacts/hello_windows_amd64.exe
+            artifacts/hello_windows_arm64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
