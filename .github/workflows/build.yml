@@ -1,0 +1,49 @@
+name: Multi-Platform Build
+
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # Linux 目标
+          - os: ubuntu-latest
+            arch: x86_64
+            cc: gcc
+            output: hello_linux_amd64
+          - os: ubuntu-latest
+            arch: arm64
+            cc: gcc
+            output: hello_linux_arm64
+          
+          # Windows 目标
+          - os: windows-latest
+            arch: x86_64
+            cc: x86_64-w64-mingw32-gcc
+            output: hello_windows_amd64.exe
+          - os: windows-latest
+            arch: aarch64
+            cc: aarch64-w64-mingw32-gcc
+            output: hello_windows_arm64.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64
+          
+      - name: Compile
+        run: |
+          ${{ matrix.cc }} hello.c -o ${{ matrix.output }}
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.output }}
+          path: ${{ matrix.output }}
